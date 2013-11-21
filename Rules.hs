@@ -5,8 +5,8 @@ import System.IO
 import Text.ParserCombinators.Parsec
 
 
-data Rules = Rules FileName (Either ParseError [(Line, Rule)])
-
+data Rules = Rules FileName (Either ParseError [(Int, Rule)])
+    deriving (Show)
 
 type FileName = String
 type SIDT = String
@@ -99,7 +99,10 @@ parseRuleLine str = parse parseRuleOrComment "(unknown)" str
 
 parseRuleOrComment:: GenParser Char st Rule
 parseRuleOrComment = do
-    try parseComment <|> parseRule
+    try parseComment <|> try parseRule <|> do
+        spaces
+        eof
+        return Comment
 
 parseComment:: GenParser Char st Rule
 parseComment = do
@@ -304,17 +307,31 @@ parseRule = do
     return $! Rule permission sids dests dates times
     
 
--- parseFile:: String-> 
+parseFile:: FileName-> IO Rules
+parseFile fname = do
+    contents <- readFile fname
+    case length contents of
+        _ -> return $! Rules fname $!
+            let fileLines = lines contents
+                foo:: Either ParseError [(Int, Rule)]-> String-> Either ParseError [(Int, Rule)]
+                foo (Left e) _ = Left e
+                foo (Right []) str = 
+                    case parseRuleLine str of 
+                        Left e -> Left e
+                        Right rule -> Right [(1, rule)]
+                foo  (Right rules@((line, _):_)) str = 
+                    case parseRuleLine str of 
+                        Left e -> Left e
+                        Right rule -> Right ((line + 1, rule ):rules)
+            in case foldl foo (Right []) fileLines of
+                Left e -> Left e
+                Right some ->  Right $! reverse some
 
 -- allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]
 -- deny sids [user SID1] dests [ net 192.168.11.30/30 ] time [ datetime 2013.11.10 00:00]
 
 main = do
-    print $! parseRuleLine "allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]"
-    print $! parseRuleLine "allow dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]"
-    print $! parseRuleLine "allow dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]"
-    print $! parseRuleLine "allow times [ 08:30 - 21:00 ]"
-    print $! parseRuleLine "    # test "
-    print $! parseRuleLine "deny"
+    ret <- parseFile "test.rule"
+    print ret
     -- print $! parseRuleLine "allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]"
     return ()
