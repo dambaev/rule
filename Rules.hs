@@ -1,7 +1,11 @@
+{-# LANGUAGE BangPatterns #-}
 module Main where
 
 import Data.Maybe
+import Data.List
 import System.IO
+import Control.Monad
+import System.Directory
 import Text.ParserCombinators.Parsec
 
 
@@ -310,8 +314,28 @@ parseFile fname = do
 -- allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]
 -- deny sids [user SID1] dests [ net 192.168.11.30/30 ] time [ datetime 2013.11.10 00:00]
 
+
+{-- 
+ - parse files in given directory. Files
+ -}
+parseDir:: String-> IO [Rules]
+parseDir dirname = do
+    !contents <- getDirectoryContents dirname
+    !sorted <- filterM filterfoo $! reverse $! sort $! contents
+    foldM doParseFiles [] sorted 
+        where
+        filterfoo x | ".rule" `isInfixOf` x = return True
+                    | otherwise = doesFileExist x
+                    
+        doParseFiles:: [Rules] -> String-> IO [Rules]
+        doParseFiles rules fname = do
+            newrules <- parseFile $! dirname ++ "/" ++ fname
+            return $! newrules:rules 
+    
+    
+
 main = do
-    ret <- parseFile "test.rule"
+    ret <- parseDir "rules"
     print ret
     -- print $! parseRuleLine "allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]"
     return ()
