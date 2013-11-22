@@ -5,7 +5,7 @@ import System.IO
 import Text.ParserCombinators.Parsec
 
 
-data Rules = Rules FileName (Either ParseError [(Int, Rule)])
+data Rules = Rules FileName (Either (Int,ParseError) [(Int, Rule)])
     deriving (Show)
 
 type FileName = String
@@ -18,9 +18,6 @@ type MaskT = Int
 data RulePermission = RuleAllow
                     | RuleDeny
     deriving (Eq,Show)
-allow = RuleAllow
-
-deny = RuleDeny
 
 data Rule = Rule RulePermission (Maybe SIDs) (Maybe Destinations) (Maybe Dates) (Maybe Times)
           | Comment
@@ -30,19 +27,13 @@ data Rule = Rule RulePermission (Maybe SIDs) (Maybe Destinations) (Maybe Dates) 
 
 data SID = SIDUser SIDT
          | SIDGroup SIDT
-         -- | SIDAny
     deriving (Eq,Show)
 type SIDs = [SID]
-
-sidUser = SIDUser
-sidGroup = SIDGroup
--- sidAny = SIDAny
 
 
 data Destination = DestinationHost IPAddress
                  | DestinationNet IPAddress MaskT
                  | DestinationAddrPort IPAddress PortT
-                -- | DestinationAny
     deriving (Eq,Show)
 type Destinations = [Destination]
            
@@ -79,17 +70,6 @@ data TimeHHMM = TimeHHMM Int Int
 data DateYYYYMMDD = DateYYYYMMDD Int Int Int
     deriving (Eq, Show)
 
-data DayOfWeek = DayOfWeek Int
-    deriving (Eq,Show)
-dayOfWeek = DayOfWeek
-
-data Hour = Hour Int
-    deriving (Eq,Show)
-hour = Hour
-
-data Minute = Minute Int
-    deriving (Eq,Show)
-minute = Minute
 
 
 
@@ -313,15 +293,15 @@ parseFile fname = do
     case length contents of
         _ -> return $! Rules fname $!
             let fileLines = lines contents
-                foo:: Either ParseError [(Int, Rule)]-> String-> Either ParseError [(Int, Rule)]
-                foo (Left e) _ = Left e
+                foo:: Either (Int, ParseError) [(Int, Rule)]-> String-> Either (Int,ParseError) [(Int, Rule)]
+                foo err@(Left some) _ = err
                 foo (Right []) str = 
                     case parseRuleLine str of 
-                        Left e -> Left e
+                        Left e -> Left (1, e)
                         Right rule -> Right [(1, rule)]
                 foo  (Right rules@((line, _):_)) str = 
                     case parseRuleLine str of 
-                        Left e -> Left e
+                        Left e -> Left (line + 1, e)
                         Right rule -> Right ((line + 1, rule ):rules)
             in case foldl foo (Right []) fileLines of
                 Left e -> Left e

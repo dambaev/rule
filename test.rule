@@ -2,6 +2,6 @@ allow sids [user SID1] dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 
 allow dests [ net 192.168.11.30/30 ] dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]
 allow dates [range 2013.11.01 - 2014.01.01, weekDay 5, weekDays 0-4, day 2013.11.10 ] times [ 08:30 - 21:00 ]
 allow times [ 08:30 - 21:00 ]
-    # test 
-deny
+    # test comment
+deny 
 
