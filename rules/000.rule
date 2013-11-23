@@ -1,2 +1,2 @@
-#asdasd
-allow dests [ addr 192.168.11.30:154421]
+allow sids [ group group3, group group2 ] dests [ net 192.168.11.0/24 ] dates [ weekDay 5, range 2013.11.22-2013.12.29]  times [ 09:00 - 10:00 ]
+
