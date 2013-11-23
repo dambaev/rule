@@ -15,7 +15,7 @@ session = ProxySession
     }
 
 main = do
-    rules <- parseDir "rules"
+    rules <- parseRuleDir "rules"
     forM rules $! \rule-> do
         putStrLn $! show rule
         putStrLn ""
