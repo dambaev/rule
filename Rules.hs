@@ -3,6 +3,7 @@ module Main where
 
 import Data.HProxy.Rules
 import Data.HProxy.Session
+import Network.AD.SID
 import Control.Monad
 
 session = ProxySession

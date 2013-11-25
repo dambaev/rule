@@ -1,1 +1,4 @@
+allow
+allowNotify
+denyNotify
 deny
